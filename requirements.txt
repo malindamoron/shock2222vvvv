@@ -1,7 +1,11 @@
-
 # Essential packages only
 numpy>=1.21.0
-pyttsx3>=2.90
-speechrecognition>=3.10.0
-pygame>=2.5.0
+pyttsx3==2.90
+pygame==2.5.2
+SpeechRecognition==3.10.0
+numpy==1.24.3
+asyncio-mqtt==0.16.1
+requests==2.31.0
+torch==2.0.1
+transformers==4.30.2
 pyaudio>=0.2.11

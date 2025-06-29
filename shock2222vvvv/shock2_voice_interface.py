@@ -24,8 +24,9 @@ sys.path.append(str(Path(__file__).parent))
 try:
     from simple_news_generator import EnhancedNewsGenerator
     NEWS_GENERATOR_AVAILABLE = True
-except ImportError:
-    print("❌ Enhanced news generator not available - using fallback")
+    print("✅ Enhanced news generator imported successfully")
+except ImportError as e:
+    print(f"❌ Enhanced news generator not available: {e} - using fallback")
     NEWS_GENERATOR_AVAILABLE = False
 
 # Cloud-compatible imports with fallbacks
