@@ -1,0 +1,7 @@
+
+# Essential packages only
+numpy>=1.21.0
+pyttsx3>=2.90
+speechrecognition>=3.10.0
+pygame>=2.5.0
+pyaudio>=0.2.11
