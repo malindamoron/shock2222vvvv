@@ -63,8 +63,9 @@ async def run_voice_interface():
         print("\nExample commands:")
         print("- 'Show me system status'")
         print("- 'Generate news about AI'") 
-        print("- 'Activate stealth mode'")
-        print("- 'What's your current state?'")
+        print("- 'Generate multiple articles'")
+        print("- 'Show me the generated articles'")
+        print("- 'Create an analysis about technology'")
         print("\nPress Ctrl+C to shutdown")
         print("=" * 50)
         

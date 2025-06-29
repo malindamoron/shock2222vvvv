@@ -11,6 +11,19 @@ import json
 import random
 import sys
 import os
+import asyncio
+import logging
+import traceback
+from pathlib import Path
+from datetime import datetime
+import random
+
+# Import our simple news generator
+sys.path.append(str(Path(__file__).parent))
+try:
+    from simple_news_generator import SimpleNewsGenerator
+except ImportError:
+    print("simple_news_generator.py not found. Please create this file for full functionality.")
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 from enum import Enum
@@ -332,6 +345,8 @@ class Shock2VoiceInterface:
         self.tts_engine = SimpleTTS()
         self.speech_recognition = SimpleSpeechRecognition()
         self.face_animation = SimpleFaceAnimation()
+        # Initialize components
+        self.news_generator = SimpleNewsGenerator()
 
         self.is_running = False
         self.conversation_count = 0
@@ -426,25 +441,12 @@ class Shock2VoiceInterface:
 
         elif voice_input.intent == VoiceCommand.NEWS_GENERATION:
             # Create a sample article
-            article = {
-                'id': len(self.generated_articles) + 1,
-                'title': f"Breaking: AI Development Update {datetime.now().strftime('%H:%M')}",
-                'content': "Latest developments in artificial intelligence continue to reshape the technological landscape. Advanced neural networks are demonstrating unprecedented capabilities in autonomous decision-making and content generation.",
-                'timestamp': datetime.now().isoformat(),
-                'category': 'Technology',
-                'quality_score': 0.94
-            }
-            self.generated_articles.append(article)
-            
-            return {
-                'success': True,
-                'data': {
-                    'articles_generated': 1,
-                    'topic': 'current events',
-                    'quality_score': 0.94,
-                    'latest_article': article
-                }
-            }
+            #Delegate article creation to the news generator
+            result = await self.news_generator.generate_article()
+            if result and result['success']:
+                return {'success': True, 'data': result}
+            else:
+                return {'success': False, 'data': {'error': 'Article generation failed'}}
 
         elif voice_input.intent == VoiceCommand.STEALTH_OPERATIONS:
             return {
@@ -505,7 +507,7 @@ class Shock2VoiceInterface:
                 total = data.get('total_articles', 0)
                 if total == 0:
                     return "No articles have been generated yet."
-                
+
                 result = f"Total articles generated: {total}. "
                 articles = data.get('articles', [])
                 if articles:
@@ -530,7 +532,169 @@ class Shock2VoiceInterface:
 
         logger.info("✅ Shutdown complete")
 
-# Main execution
+    async def _handle_news_generation(self, command: str):
+        """Handle news generation commands"""
+        try:
+            await self.tts_engine.speak("Initiating news generation sequence.")
+            print("📰 News generation in progress...")
+
+            # Parse command for specifics
+            topic = None
+            article_type = "breaking"
+            count = 1
+
+            command_lower = command.lower()
+
+            # Extract topic
+            for topic_word in ["ai", "artificial intelligence", "technology", "climate", "health", "space"]:
+                if topic_word in command_lower:
+                    topic = topic_word.title()
+                    break
+
+            # Extract article type
+            if "analysis" in command_lower:
+                article_type = "analysis"
+            elif "summary" in command_lower:
+                article_type = "summary"
+
+            # Extract count
+            if "multiple" in command_lower or "several" in command_lower:
+                count = 3
+            elif any(num in command_lower for num in ["five", "5"]):
+                count = 5
+
+            # Generate articles
+            if count > 1:
+                results = await self.news_generator.generate_multiple_articles(count)
+                successful = sum(1 for r in results if r['success'])
+
+                if successful > 0:
+                    await self.tts_engine.speak(f"Successfully generated {successful} articles. Check the output folder for details.")
+                    print(f"✅ Generated {successful} articles:")
+                    for result in results:
+                        if result['success']:
+                            print(f"   • {result['title']}")
+                else:
+                    await self.tts_engine.speak("I encountered issues generating the articles. Please try again.")
+            else:
+                result = await self.news_generator.generate_article(topic, article_type)
+
+                if result['success']:
+                    await self.tts_engine.speak(f"Successfully generated a {article_type} article about {result['topic']}.")
+                    print(f"✅ Generated: {result['title']}")
+                    print(f"   File: {result['filename']}")
+                    print(f"   Word count: {result['word_count']}")
+                else:
+                    await self.tts_engine.speak("I encountered an error generating the article. Please try again.")
+
+        except Exception as e:
+            logger.error(f"Error in news generation: {e}")
+            await self.tts_engine.speak("I encountered an error during news generation.")
+
+    async def _handle_stealth_operations(self, command: str):
+        """Handle stealth operations commands"""
+        await self.tts_engine.speak("Stealth operations engaged.")
+        print("👻 Stealth operation command processed")
+
+    async def _handle_system_control(self, command: str):
+        """Handle system control commands"""
+        await self.tts_engine.speak("System control functionality activated.")
+        print("🎛️ System control command processed")
+
+    async def _handle_show_articles(self, command: str):
+        """Handle requests to show generated articles"""
+        try:
+            # Check if we have any generated articles
+            output_dir = Path("output")
+            if not output_dir.exists():
+                await self.tts_engine.speak("No articles have been generated yet. Would you like me to generate some?")
+                return
+
+            # Find the most recent articles
+            article_files = list(output_dir.glob("*.md"))
+            if not article_files:
+                await self.tts_engine.speak("No articles found in the output directory.")
+                return
+
+            # Sort by modification time, get most recent
+            recent_files = sorted(article_files, key=lambda x: x.stat().st_mtime, reverse=True)[:5]
+
+            print("\n📰 Recent Generated Articles:")
+            print("=" * 50)
+
+            article_info = []
+            for i, file_path in enumerate(recent_files, 1):
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                    lines = content.split('\n')
+                    title = lines[0].replace('#', '').strip() if lines else file_path.stem
+
+                print(f"{i}. {title}")
+                print(f"   File: {file_path.name}")
+                print(f"   Modified: {datetime.fromtimestamp(file_path.stat().st_mtime).strftime('%Y-%m-%d %H:%M:%S')}")
+                print()
+
+                article_info.append(title)
+
+            # Speak the response
+            count = len(recent_files)
+            if count == 1:
+                response = f"I found 1 generated article: {article_info[0]}"
+            else:
+                response = f"I found {count} recent articles. The most recent is: {article_info[0]}"
+
+            await self.tts_engine.speak(response)
+
+        except Exception as e:
+            logger.error(f"Error showing articles: {e}")
+            await self.tts_engine.speak("I encountered an error while retrieving the articles.")
+
+    async def _execute_command(self, voice_input: VoiceInput) -> Dict[str, Any]:
+        """Execute voice command"""
+
+        if voice_input.intent == VoiceCommand.SYSTEM_CONTROL:
+            status = self.system_manager.get_system_status()
+            return {'success': True, 'data': status}
+
+        elif voice_input.intent == VoiceCommand.NEWS_GENERATION:
+            #Delegate article creation to the news generator
+            result = await self.news_generator.generate_article()
+            if result and result['success']:
+                return {'success': True, 'data': result}
+            else:
+                return {'success': False, 'data': {'error': 'Article generation failed'}}
+
+        elif voice_input.intent == VoiceCommand.STEALTH_OPERATIONS:
+            return {
+                'success': True,
+                'data': {
+                    'stealth_mode': 'activated',
+                    'detection_probability': 0.02,
+                    'signature_masking': 'enabled'
+                }
+            }
+
+        elif voice_input.intent == VoiceCommand.STATUS_CHECK:
+            # Check if user wants to see articles
+            if any(phrase in voice_input.text.lower() for phrase in ['show me generated', 'list recent', 'display articles', 'view articles', 'show articles']):
+                await self._handle_show_articles(voice_input.text)
+                return {'success': True, 'data': {'action': 'show_articles'}}
+
+            else:
+                return {
+                    'success': True,
+                    'data': {
+                        'status': 'OPTIMAL',
+                        'conversations': self.conversation_count,
+                        'efficiency': '97.3%'
+                    }
+                }
+
+        else:
+            return {
+                'success': True,
+                'data': {'response_type': 'conversational'}
+            }
 async def main():
     """Main entry point"""
     interface = Shock2VoiceInterface()
