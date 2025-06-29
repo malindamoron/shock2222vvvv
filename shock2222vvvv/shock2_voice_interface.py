@@ -111,12 +111,16 @@ class SimpleNLPProcessor:
         """Process voice input and determine intent"""
         text_lower = text.lower()
 
-        # Classify intent
-        intent = VoiceCommand.CONVERSATION
-        for command_type, keywords in self.command_patterns.items():
-            if any(keyword in text_lower for keyword in keywords):
-                intent = command_type
-                break
+        # Check for article viewing commands
+        if any(phrase in text_lower for phrase in ['show me generated', 'list recent', 'display articles', 'view articles', 'show articles']):
+            intent = VoiceCommand.STATUS_CHECK
+        else:
+            # Classify intent
+            intent = VoiceCommand.CONVERSATION
+            for command_type, keywords in self.command_patterns.items():
+                if any(keyword in text_lower for keyword in keywords):
+                    intent = command_type
+                    break
 
         return VoiceInput(
             text=text,
@@ -331,6 +335,7 @@ class Shock2VoiceInterface:
 
         self.is_running = False
         self.conversation_count = 0
+        self.generated_articles = []  # Store generated articles
 
     async def initialize(self):
         """Initialize the voice interface"""
@@ -420,12 +425,24 @@ class Shock2VoiceInterface:
             return {'success': True, 'data': status}
 
         elif voice_input.intent == VoiceCommand.NEWS_GENERATION:
+            # Create a sample article
+            article = {
+                'id': len(self.generated_articles) + 1,
+                'title': f"Breaking: AI Development Update {datetime.now().strftime('%H:%M')}",
+                'content': "Latest developments in artificial intelligence continue to reshape the technological landscape. Advanced neural networks are demonstrating unprecedented capabilities in autonomous decision-making and content generation.",
+                'timestamp': datetime.now().isoformat(),
+                'category': 'Technology',
+                'quality_score': 0.94
+            }
+            self.generated_articles.append(article)
+            
             return {
                 'success': True,
                 'data': {
                     'articles_generated': 1,
                     'topic': 'current events',
-                    'quality_score': 0.94
+                    'quality_score': 0.94,
+                    'latest_article': article
                 }
             }
 
@@ -440,14 +457,25 @@ class Shock2VoiceInterface:
             }
 
         elif voice_input.intent == VoiceCommand.STATUS_CHECK:
-            return {
-                'success': True,
-                'data': {
-                    'status': 'OPTIMAL',
-                    'conversations': self.conversation_count,
-                    'efficiency': '97.3%'
+            # Check if user wants to see articles
+            if any(phrase in voice_input.text.lower() for phrase in ['show me generated', 'list recent', 'display articles', 'view articles', 'show articles']):
+                return {
+                    'success': True,
+                    'data': {
+                        'action': 'show_articles',
+                        'total_articles': len(self.generated_articles),
+                        'articles': self.generated_articles[-3:] if self.generated_articles else []  # Show last 3
+                    }
                 }
-            }
+            else:
+                return {
+                    'success': True,
+                    'data': {
+                        'status': 'OPTIMAL',
+                        'conversations': self.conversation_count,
+                        'efficiency': '97.3%'
+                    }
+                }
 
         else:
             return {
@@ -463,13 +491,30 @@ class Shock2VoiceInterface:
             return f"System uptime: {uptime_hours:.1f} hours. {data.get('active_processes', 0)} processes active."
 
         elif intent == VoiceCommand.NEWS_GENERATION:
-            return f"Generated {data.get('articles_generated', 0)} articles with {data.get('quality_score', 0)*100:.0f}% quality."
+            result = f"Generated {data.get('articles_generated', 0)} articles with {data.get('quality_score', 0)*100:.0f}% quality."
+            if 'latest_article' in data:
+                article = data['latest_article']
+                result += f" Latest article: {article['title']}"
+            return result
 
         elif intent == VoiceCommand.STEALTH_OPERATIONS:
             return f"Detection probability: {data.get('detection_probability', 0)*100:.1f}%."
 
         elif intent == VoiceCommand.STATUS_CHECK:
-            return f"Conversations processed: {data.get('conversations', 0)}. Efficiency: {data.get('efficiency', 'optimal')}."
+            if data.get('action') == 'show_articles':
+                total = data.get('total_articles', 0)
+                if total == 0:
+                    return "No articles have been generated yet."
+                
+                result = f"Total articles generated: {total}. "
+                articles = data.get('articles', [])
+                if articles:
+                    result += "Recent articles: "
+                    for i, article in enumerate(articles[-3:], 1):
+                        result += f"{i}. {article['title']} - {article['category']}. "
+                return result
+            else:
+                return f"Conversations processed: {data.get('conversations', 0)}. Efficiency: {data.get('efficiency', 'optimal')}."
 
         return ""
 
