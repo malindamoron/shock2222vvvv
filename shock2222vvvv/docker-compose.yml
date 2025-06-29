@@ -1,0 +1,81 @@
+# Shock2 AI News System - Docker Compose Configuration
+version: '3.8'
+
+services:
+  shock2-system:
+    build: .
+    container_name: shock2-ai-system
+    restart: unless-stopped
+    environment:
+      - PYTHONPATH=/app
+      - LOG_LEVEL=INFO
+      - OUTPUT_DIR=/app/output
+      - MODEL_CACHE_DIR=/app/data/models
+    volumes:
+      - ./output:/app/output
+      - ./logs:/app/logs
+      - ./data:/app/data
+      - ./config:/app/config
+    ports:
+      - "8080:8080"  # Monitoring dashboard
+    networks:
+      - shock2-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8080/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  shock2-database:
+    image: postgres:15-alpine
+    container_name: shock2-database
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=shock2
+      - POSTGRES_USER=shock2_user
+      - POSTGRES_PASSWORD=shock2_secure_pass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    networks:
+      - shock2-network
+
+  shock2-redis:
+    image: redis:7-alpine
+    container_name: shock2-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass shock2_redis_pass
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - shock2-network
+
+  shock2-monitoring:
+    image: grafana/grafana:latest
+    container_name: shock2-monitoring
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=shock2_admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana:/etc/grafana/provisioning
+    ports:
+      - "3000:3000"
+    networks:
+      - shock2-network
+    depends_on:
+      - shock2-system
+
+volumes:
+  postgres_data:
+  redis_data:
+  grafana_data:
+
+networks:
+  shock2-network:
+    driver: bridge

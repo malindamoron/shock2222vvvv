@@ -1,0 +1,76 @@
+# Core AI/ML packages
+torch>=2.0.0
+torchvision>=0.15.0
+torchaudio>=2.0.0
+transformers>=4.30.0
+tokenizers>=0.13.0
+datasets>=2.14.0
+accelerate>=0.20.0
+
+# Scientific computing
+numpy>=1.21.0,<2.0.0
+scipy>=1.7.0
+pandas>=1.3.0
+scikit-learn>=1.0.0
+matplotlib>=3.4.0
+seaborn>=0.11.0
+
+# Computer vision
+opencv-python>=4.5.0
+mediapipe>=0.10.0
+pillow>=8.3.0
+
+# Natural language processing
+spacy>=3.6.0
+nltk>=3.8.0
+textblob>=0.17.0
+
+# Web scraping and APIs
+requests>=2.25.0
+aiohttp>=3.8.0
+beautifulsoup4>=4.9.0
+lxml>=4.6.0
+selenium>=4.0.0
+feedparser>=6.0.0
+
+# Database
+sqlalchemy>=2.0.0
+alembic>=1.11.0
+
+# Configuration and utilities
+pyyaml>=6.0.0
+python-dotenv>=1.0.0
+click>=8.0.0
+rich>=13.0.0
+tqdm>=4.60.0
+psutil>=5.8.0
+schedule>=1.2.0
+watchdog>=3.0.0
+
+# Logging and monitoring
+loguru>=0.7.0
+
+# File processing
+openpyxl>=3.0.0
+python-docx>=0.8.0
+pypdf>=3.0.0
+
+# Networking
+websockets>=11.0.0
+paramiko>=3.0.0
+
+# Async support
+asyncio-mqtt>=0.13.0
+aiofiles>=23.0.0
+uvloop>=0.17.0
+
+# Security
+cryptography>=41.0.0
+bcrypt>=4.0.0
+passlib>=1.7.0
+
+# Graphics (optional)
+pygame>=2.5.0
+moderngl>=5.8.0
+glfw>=2.6.0
+pyrr>=0.10.0

@@ -1,0 +1,32 @@
+# Voice Interface Configuration
+voice_interface:
+  enabled: true
+  wake_word: "shock"
+  confidence_threshold: 0.7
+
+speech_recognition:
+  engine: "whisper"
+  model_size: "base"
+  language: "english"
+  timeout: 5
+  phrase_timeout: 1
+
+text_to_speech:
+  engine: "pyttsx3"
+  voice_rate: 200
+  voice_volume: 0.9
+  voice_pitch: 0
+
+audio:
+  sample_rate: 16000
+  chunk_size: 1024
+  channels: 1
+  input_device: null
+  output_device: null
+
+personas:
+  default: "assistant"
+  available:
+    - "assistant"
+    - "companion"
+    - "professional"

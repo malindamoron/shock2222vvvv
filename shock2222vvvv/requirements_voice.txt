@@ -1,0 +1,42 @@
+# Voice recognition and synthesis
+speechrecognition>=3.10.0
+pyttsx3>=2.90
+gtts>=2.3.0
+openai-whisper>=20230918
+
+# Audio processing
+librosa>=0.10.0
+soundfile>=0.12.0
+pydub>=0.25.0
+noisereduce>=3.0.0
+
+# Audio I/O (may require system dependencies)
+pyaudio>=0.2.11
+sounddevice>=0.4.0
+
+# Voice activity detection
+webrtcvad>=2.0.10
+
+# Text-to-speech engines
+TTS>=0.15.0
+
+# Wake word detection
+pvporcupine>=2.2.0
+
+# Audio effects and processing
+pedalboard>=0.7.0
+pyrubberband>=0.3.0
+
+# Audio format support
+mutagen>=1.46.0
+eyed3>=0.9.0
+
+# Performance optimization
+numba>=0.57.0
+resampy>=0.4.0
+
+# Voice cloning and synthesis
+coqui-ai-tts>=0.15.0
+
+# Real-time audio processing
+python-rtaudio>=1.2.0
